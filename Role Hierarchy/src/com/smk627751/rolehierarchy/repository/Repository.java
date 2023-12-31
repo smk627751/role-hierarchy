@@ -24,14 +24,22 @@ public class Repository {
 	
 	public List<Employee> getEmployee(String role) throws SQLException
 	{
-		return this.db.getEmployee(role);
+		return db.getEmployee(role);
 	}
 
 	public boolean addSubRole(String role, String reportingManager) throws SQLException {
-		return this.db.insertEmployee(role,reportingManager);
+		return db.insertEmployee(role,reportingManager);
 	}
 	public List<String> displayRole(String reportingManager) throws SQLException
 	{
-		return this.db.displayRole(reportingManager);
+		return db.displayRole(reportingManager);
+	}
+
+	public boolean deleteRole(String roleToDelete, String roleToTransfer) throws SQLException {
+		return db.deleteRole(roleToDelete,roleToTransfer);
+	}
+	public boolean addUser(String name, String role) throws SQLException
+	{
+		return db.addUser(name, role);
 	}
 }

@@ -23,9 +23,14 @@ public class Database {
 	public List<String> displayRole(String reportingManager) throws SQLException
 	{
 		List<String> subRoles = new ArrayList<>();
-		String sql = "select role from role_table where id = (select role from employee_table where reporting_manager = (select id from role_table where role = '"+reportingManager+"'))";
 		Statement s = con.createStatement();
-		ResultSet rs = s.executeQuery(sql);
+		ResultSet rs = null;
+		String sql = Query.DISPLAY_ROLES_QUERY;
+		if(reportingManager != null)
+		{
+			sql += "where r.role = '"+reportingManager+"'";
+		}
+		rs = s.executeQuery(sql);
 		while(rs.next())
 		{
 			subRoles.add(rs.getString("role"));
@@ -35,9 +40,8 @@ public class Database {
 	public List<Employee> getEmployee(String role) throws SQLException
 	{
 		List<Employee> employeeList = new ArrayList<>();
-		String baseQuery = "select e.id, e.name, e.is_active, r.role, e.reporting_manager from employee_table as e join role_table as r on e.role = r.id";
 		Statement s = con.createStatement();
-		String sql = "select * from ("+baseQuery+") as emp_table where role = '"+role+"'";
+		String sql = "select * from ("+Query.BASE_QUERY+") as emp_table where role = '"+role+"'";
 		ResultSet rs = s.executeQuery(sql);
 		while(rs.next())
 		{
@@ -80,5 +84,44 @@ public class Database {
 		rowsAffected = ps1.executeUpdate();
 		return rowsAffected > 0 ? true : false;
 	}
-	
+	public boolean deleteRole(String roleToDelete, String roleToTransfer) throws SQLException {
+		String sql = "select reporting_manager as id from employee_table where role = (select id from role_table where role ='"+roleToDelete+"')";
+		Statement s = con.createStatement();
+		ResultSet rs = s.executeQuery(sql);
+		int parent = 0;
+		while(rs.next())
+		{
+			parent = rs.getInt("id");
+		}
+		
+		sql = Query.UPDATE_ROLE_QUERY.replace("rd", roleToDelete).replace("rm", roleToTransfer);
+		PreparedStatement ps = con.prepareStatement(sql);
+		int rowAffected = ps.executeUpdate();
+		if(rowAffected == 0)
+		{
+			return false;
+		}
+		sql = Query.DELETE_ROLE_QUERY.replace("?", roleToDelete);
+		ps = con.prepareStatement(sql);
+		rowAffected = ps.executeUpdate();
+		if(rowAffected == 0)
+		{
+			return false;
+		}
+		sql = "update employee_table set reporting_manager = "+parent+" where role = (select id from role_table where role = '"+roleToTransfer+"')";
+		ps = con.prepareStatement(sql);
+		rowAffected = ps.executeUpdate();
+		if(rowAffected == 0)
+		{
+			return false;
+		}
+		return true;
+	}
+	public boolean addUser(String name, String role) throws SQLException
+	{
+		String sql = "update employee_table set name = '"+name+"' where role = (select id from role_table where role = '"+role+"')";
+		PreparedStatement ps = con.prepareStatement(sql);
+		int rowAffected = ps.executeUpdate();
+		return rowAffected > 0 ? true : false;
+	}
 }
